@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Interface to Tesseract executable"""
+
 import os
 import shutil
 from collections import namedtuple
@@ -184,7 +186,9 @@ def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=
 
 
 def tesseract_log_output(mainlog, stdout, input_file):
-    log = TesseractLoggerAdapter(mainlog, extra=mainlog.extra)
+    log = TesseractLoggerAdapter(
+        mainlog, extra=mainlog.extra if hasattr(mainlog, 'extra') else None
+    )
 
     try:
         text = stdout.decode()
