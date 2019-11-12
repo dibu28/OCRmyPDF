@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import locale
 import logging
 import os
 from unittest.mock import patch
@@ -117,11 +116,28 @@ def test_report_file_size(tmp_path, caplog):
     opts = make_opts()
     vd.report_output_file_size(opts, in_, out)
     assert caplog.text == ''
+    caplog.clear()
 
     os.truncate(in_, 25001)
     os.truncate(out, 50000)
+    with patch('ocrmypdf._validation.jbig2enc.available', return_value=True), patch(
+        'ocrmypdf._validation.pngquant.available', return_value=True
+    ):
+        vd.report_output_file_size(opts, in_, out)
+        assert 'No reason' in caplog.text
+    caplog.clear()
+
+    with patch('ocrmypdf._validation.jbig2enc.available', return_value=False), patch(
+        'ocrmypdf._validation.pngquant.available', return_value=True
+    ):
+        vd.report_output_file_size(opts, in_, out)
+        assert 'optional dependency' in caplog.text
+    caplog.clear()
+
+    opts = make_opts(in_, out, optimize=0)
     vd.report_output_file_size(opts, in_, out)
-    assert 'No reason' in caplog.text
+    assert 'disabled' in caplog.text
+    caplog.clear()
 
 
 def test_false_action_store_true():
