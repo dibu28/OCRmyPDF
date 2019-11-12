@@ -19,7 +19,7 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
-from shutil import copyfileobj
+from shutil import copyfileobj, copyfile
 
 import img2pdf
 import pikepdf
@@ -701,7 +701,8 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         if modified:
             pdf_file.save(fix_docinfo_file)
         else:
-            os.symlink(input_pdf, fix_docinfo_file)
+            #os.symlink(input_pdf, fix_docinfo_file)
+            copyfile(input_pdf, fix_docinfo_file)
 
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,

@@ -339,7 +339,7 @@ def run_pipeline(options, api=False):
 
         if options.output_file == '-':
             log.info("Output sent to stdout")
-        elif os.path.samefile(options.output_file, os.devnull):
+        elif options.output_file == os.devnull: #os.path.samefile(options.output_file, os.devnull):
             pass  # Say nothing when sending to dev null
         else:
             if options.output_type.startswith('pdfa'):

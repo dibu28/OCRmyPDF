@@ -21,7 +21,7 @@ import logging
 import re
 import warnings
 from functools import lru_cache
-from os import fspath
+from os import fspath, remove
 from shutil import copy
 from subprocess import PIPE, STDOUT, run
 from tempfile import NamedTemporaryFile
@@ -36,7 +36,7 @@ gslog = logging.getLogger()
 
 @lru_cache(maxsize=1)
 def version():
-    return get_version('gs')
+    return get_version('gswin64c.exe')
 
 
 def jpeg_passthrough_available():
@@ -83,7 +83,7 @@ def extract_text(input_file, pageno=1):
 
     args_gs = (
         [
-            'gs',
+            'gswin64c.exe',
             '-dQUIET',
             '-dSAFER',
             '-dBATCH',
@@ -144,7 +144,7 @@ def rasterize_pdf(
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = (
             [
-                'gs',
+                'gswin64c.exe',
                 '-dQUIET',
                 '-dSAFER',
                 '-dBATCH',
@@ -157,7 +157,7 @@ def rasterize_pdf(
             + (['-dFILTERVECTOR'] if filter_vector else [])
             + [
                 '-o',
-                tmp.name,
+                tmp.name+'_1',
                 '-dAutoRotatePages=/None',  # Probably has no effect on raster
                 '-f',
                 fspath(input_file),
@@ -172,10 +172,11 @@ def rasterize_pdf(
             log.debug(p.stdout)
 
         if p.returncode != 0:
+            remove(tmp.name+'_1')
             raise SubprocessOutputError('Ghostscript rasterizing failed')
 
         tmp.seek(0)
-        with Image.open(tmp) as im:
+        with Image.open(tmp.name+'_1') as im:
             if rotation is not None:
                 log.debug("Rotating output by %i", rotation)
                 # rotation is a clockwise angle and Image.ROTATE_* is
@@ -189,7 +190,7 @@ def rasterize_pdf(
                 if rotation % 180 == 90:
                     page_dpi = page_dpi[1], page_dpi[0]
             im.save(fspath(output_file), dpi=page_dpi)
-
+            remove(tmp.name+'_1')
 
 def generate_pdfa(
     pdf_pages,
@@ -277,7 +278,7 @@ def generate_pdfa(
                 "-dJPEGQ=95",
                 "-dPDFA=" + pdfa_part,
                 "-dPDFACompatibilityPolicy=1",
-                "-sOutputFile=" + gs_pdf.name,
+                "-sOutputFile=" + gs_pdf.name+'_1',
             ]
         )
         args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
@@ -300,6 +301,8 @@ def generate_pdfa(
         if p.returncode == 0:
             # Ghostscript does not change return code when it fails to create
             # PDF/A - check PDF/A status elsewhere
-            copy(gs_pdf.name, fspath(output_file))
+            copy(gs_pdf.name+'_1', fspath(output_file))
+            remove(gs_pdf.name+'_1')
         else:
+            remove(gs_pdf.name+'_1')
             raise SubprocessOutputError('Ghostscript PDF/A rendering failed')

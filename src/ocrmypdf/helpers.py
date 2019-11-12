@@ -23,6 +23,7 @@ from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
 from pathlib import Path
+from shutil import copyfile
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +64,8 @@ def re_symlink(input_file, soft_link_name, *args, **kwargs):
     log.debug("os.symlink(%s, %s)", input_file, soft_link_name)
 
     # Create symbolic link using absolute path
-    os.symlink(os.path.abspath(input_file), soft_link_name)
+    #os.symlink(os.path.abspath(input_file), soft_link_name)
+    copyfile(os.path.abspath(input_file), soft_link_name)
 
 
 def is_iterable_notstr(thing):
